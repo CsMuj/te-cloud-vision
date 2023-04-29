@@ -10,20 +10,35 @@ print("starting object recognizer...")
 
 object_to_find = 0
 
-def get_object_from_cloud(image_path):
+def get_face_from_cloud(image_path):
 
     with io.open(image_path, 'rb') as image_file:
         content = image_file.read()
 
+    likelihood_name = ('Unknown', 'Very unlikely', 'Unlikely', 'Possible',
+                       'Likely', 'Very likey')
+
     image = vision.Image(content=content)
-    response = client.label_detection(image=image) #full response from Google cloud vision
-    label_annotations = response.label_annotations #array of objects labeled
-    #print(label_annotations)
-    description = label_annotations[0].description #get description of one object, the first being the one with the highest confidnce score.
-    if description:
-        return description
-    else:
-        return 'could not detect object'
+    response = client.face_detection(image=image) #full response from Google cloud vision
+    faces = response.face_annotations #array of objects labeled
+    #print(face_annotations)
+    print('Faces:')
+
+    for face in faces:
+        print('anger: {}'.format(likelihood_name[face.anger_likelihood]))
+        print('joy: {}'.format(likelihood_name[face.joy_likelihood]))
+        print('surprise: {}'.format(likelihood_name[face.surprise_likelihood]))
+
+        # vertices = (['({},{})'.format(vertex.x, vertex.y)
+        #             for vertex in face.bounding_poly.vertices])
+
+        # print('face bounds: {}'.format(','.join(vertices)))
+
+    if response.error.message:
+        raise Exception(
+            '{}\nFor more info on error messages, check: '
+            'https://cloud.google.com/apis/design/errors'.format(
+                response.error.message))
 
 def get_image_from_frame(cap):
     ret, frame = cap.read()
@@ -40,12 +55,10 @@ def start_camera():
     print("Starting camera")
 
     while True:
-         
+        
         img = get_image_from_frame(cap)
         key = cv2.waitKey(0) #press 0 to move through frames
-        object_to_find = get_object_from_cloud(img)
-        
-        print(object_to_find)
+        object_to_find = get_face_from_cloud(img)
 
         if key == ord('q'): #press q to quit
             break
